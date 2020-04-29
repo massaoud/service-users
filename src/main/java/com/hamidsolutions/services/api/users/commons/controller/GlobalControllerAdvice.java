@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -102,5 +103,15 @@ public class GlobalControllerAdvice {
 //        }
         return new ResponseDto<>(Status.FAIL, String.valueOf(HttpStatus.BAD_REQUEST.value()), null, "Business Exception", 0, 0, 0L);
     }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(value = {UsernameNotFoundException.class})
+    public @ResponseBody
+    ResponseDto<ErrorDto> handleUserNotFoundException(UsernameNotFoundException e) {
+        log.error("Nullable Exception e", e);
+
+        return new ResponseDto<>(Status.FAIL, String.valueOf(HttpStatus.NOT_FOUND.value()), null, e.getMessage(), 0, 0, 0L);
+    }
+
 
 }

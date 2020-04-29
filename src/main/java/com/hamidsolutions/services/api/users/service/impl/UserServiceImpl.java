@@ -2,7 +2,10 @@ package com.hamidsolutions.services.api.users.service.impl;
 
 import com.hamidsolutions.services.api.users.commons.dto.ErrorDto;
 import com.hamidsolutions.services.api.users.commons.exception.BusinessException;
+import com.hamidsolutions.services.api.users.config.security.JWTUtil;
 import com.hamidsolutions.services.api.users.domain.User;
+import com.hamidsolutions.services.api.users.dto.ListUserDTO;
+import com.hamidsolutions.services.api.users.dto.ResponseLoginUser;
 import com.hamidsolutions.services.api.users.dto.ResponseUserDTO;
 import com.hamidsolutions.services.api.users.dto.UserDTO;
 import com.hamidsolutions.services.api.users.mappers.UserMapper;
@@ -11,19 +14,14 @@ import com.hamidsolutions.services.api.users.service.UserService;
 import com.hamidsolutions.services.api.users.web.rest.vm.LoginVm;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.lang.Nullable;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.nio.charset.Charset;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.UUID;
@@ -37,7 +35,8 @@ public class UserServiceImpl implements UserService {
     private UserRepository userRepository;
     @Autowired
     BCryptPasswordEncoder bCryptPasswordEncoder;
-
+    @Autowired
+    JWTUtil jwtUtil;
     @Override
     public Mono<UserDTO> createUser(UserDTO userDTO) {
         User user = userMapper.userDTOToUser(userDTO);
@@ -92,10 +91,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Flux<UserDTO> findAllUser() {
-        Flux<UserDTO> fluxUserDTO = userRepository.findAll().
+    public Flux<ListUserDTO> findAllUser() {
+        Flux<ListUserDTO> fluxUserDTO = userRepository.findAll().
                 flatMap(s -> {
-                    return Flux.just(userMapper.userToUserDTO(s));
+                    return Flux.just(userMapper.userToListUserDTO(s));
                 });
         return fluxUserDTO;
     }
@@ -191,7 +190,9 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmailAndActivateIsTrue(loginVm.getUsername())
                 .flatMap(userDetails -> {
                     if (bCryptPasswordEncoder.matches(loginVm.getPassword(),userDetails.getPassword())) {
-                        return Mono.just("token");  //AuthResponse(jwtUtil.generateToken(userDetails));
+                        ResponseLoginUser r = userMapper.userToResponseLoginUser(userDetails);
+                        r.setRememberMe(loginVm.isRememberMe());
+                        return Mono.just(jwtUtil.generateToken(r));  //AuthResponse(jwtUtil.generateToken(userDetails));
                     } else {
                         return Mono.error(
                                 new WebClientResponseException(HttpStatus.UNAUTHORIZED.value(),HttpStatus.UNAUTHORIZED.name(),null,null,null));
@@ -204,6 +205,15 @@ public class UserServiceImpl implements UserService {
                                         .message("email not exist")
                                         .build()))))
                 ;
+
+    }
+
+    @Override
+    public Mono<User> fetchUserByUsername(String username) {
+        return userRepository.findByEmail(username).flatMap(u->{
+          return  Mono.just((u));
+         }).switchIfEmpty(
+                Mono.error(new UsernameNotFoundException(username +" Not Exist")));
 
     }
 

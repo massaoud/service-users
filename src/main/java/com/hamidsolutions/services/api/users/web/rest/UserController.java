@@ -6,6 +6,7 @@ import com.hamidsolutions.services.api.users.commons.dto.ErrorDto;
 import com.hamidsolutions.services.api.users.commons.dto.ResponseDto;
 import com.hamidsolutions.services.api.users.commons.exception.BusinessException;
 import com.hamidsolutions.services.api.users.domain.User;
+import com.hamidsolutions.services.api.users.dto.ListUserDTO;
 import com.hamidsolutions.services.api.users.dto.ResponseUserDTO;
 import com.hamidsolutions.services.api.users.dto.UserDTO;
 import com.hamidsolutions.services.api.users.repository.UserRepository;
@@ -69,8 +70,8 @@ public class UserController extends BaseController {
 
 
 
-    @GetMapping
-    public Flux<UserDTO> getAllUsers() {
+    @GetMapping()
+    public Flux<ListUserDTO> getAllUsers() {
         return userService.findAllUser();
 
     }

@@ -2,6 +2,9 @@ package com.hamidsolutions.services.api.users.config.security;
 
 
 import com.hamidsolutions.services.api.users.domain.User;
+import com.hamidsolutions.services.api.users.dto.ResponseLoginUser;
+import com.hamidsolutions.services.api.users.dto.ResponseUserDTO;
+import com.hamidsolutions.services.api.users.dto.UserDTO;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -27,6 +30,7 @@ public class JWTUtil implements Serializable {
   // private String expirationTime;
 
     public Claims getAllClaimsFromToken(String token) {
+
         return Jwts.parser().setSigningKey(Base64.getEncoder().encodeToString(environment.getProperty("token.secret").getBytes())).parseClaimsJws(token).getBody();
     }
 
@@ -43,11 +47,12 @@ public class JWTUtil implements Serializable {
         return expiration.before(new Date());
     }
 
-    public String generateToken(User user) {
+    public String generateToken(ResponseLoginUser user) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", user.getRoles());
-        claims.put("role", user.getRoles());
-        return doGenerateToken(claims, user.getUsername());
+        claims.put("userId", user.getUserId());
+        claims.put("roles", user.getRoles());
+        claims.put("rememberMe", user.isRememberMe());
+        return doGenerateToken(claims, user.getEmail());
     }
 
     private String doGenerateToken(Map<String, Object> claims, String username) {
@@ -60,7 +65,7 @@ public class JWTUtil implements Serializable {
                 .setSubject(username)
                 .setIssuedAt(createdDate)
                 .setExpiration(expirationDate)
-                .signWith(SignatureAlgorithm.HS512, Base64.getEncoder().encodeToString(environment.getProperty("token.secret").getBytes()))
+                .signWith(SignatureAlgorithm.HS512, environment.getProperty("token.secret").getBytes())
                 .compact();
     }
 

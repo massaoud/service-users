@@ -16,8 +16,8 @@ import javax.validation.constraints.Size;
 public class ResponseUserDTO {
     @NotNull
     private String email;
-    @NotNull
     private String userId;
     private boolean activate = false ;
     private boolean disable = false;
+
 }
